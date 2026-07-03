@@ -108,51 +108,40 @@ local function PegarNomesJogadores()
 end
 
 -------------------------------------------------------------------------
--- SISTEMA DE PORTAIS (ABA-2)
+-- SISTEMA DE PORTAIS CORRIGIDO (ABA-2)
 -------------------------------------------------------------------------
 local PortalVerde = nil
 local PortalAzul = nil
 local ProximoPortal = "Verde"
-local EmCooldownTeleporte = false -- Evita loop infinito de teleporte
+
+-- Contadores de tempo (Para ficar 2 segundos em cima)
+local TempoNoVerde = 0
+local TempoNoAzul = 0
+local TempoParaTeleporte = 2 -- 2 segundos
 
 local function SoltarPortal()
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
     
-    -- Pega a posição do jogador e joga um pouco para baixo (para ficar no chão)
     local posicaoChao = char.HumanoidRootPart.Position - Vector3.new(0, 3, 0)
 
     if ProximoPortal == "Verde" then
         if not PortalVerde then
-            -- Cria o bloco Verde se não existir
             PortalVerde = Instance.new("Part")
-            PortalVerde.Size = Vector3.new(6, 0.2, 6) -- Grandinho e achatado
+            PortalVerde.Size = Vector3.new(6, 0.2, 6)
             PortalVerde.Anchored = true
             PortalVerde.CanCollide = false
             PortalVerde.Material = Enum.Material.Neon
             PortalVerde.Color = Color3.fromRGB(0, 255, 0)
             PortalVerde.Parent = Workspace
             PortalVerde.Name = "PortalVerdeLocal"
-
-            -- Sistema de pisar e teleportar
-            PortalVerde.Touched:Connect(function(hit)
-                if hit.Parent == char and PortalAzul and not EmCooldownTeleporte then
-                    EmCooldownTeleporte = true
-                    char.HumanoidRootPart.CFrame = PortalAzul.CFrame + Vector3.new(0, 3, 0)
-                    Rayfield:Notify({Title = "Portal", Content = "Teleportado para o Azul!", Duration = 1})
-                    task.wait(1.5) -- Tempo de recarga
-                    EmCooldownTeleporte = false
-                end
-            end)
         end
-        -- Move o portal verde para o jogador
         PortalVerde.CFrame = CFrame.new(posicaoChao)
         ProximoPortal = "Azul"
         Rayfield:Notify({Title = "Release", Content = "Portal Verde posicionado!", Duration = 2})
 
     else
         if not PortalAzul then
-            -- Cria o bloco Azul se não existir
             PortalAzul = Instance.new("Part")
             PortalAzul.Size = Vector3.new(6, 0.2, 6)
             PortalAzul.Anchored = true
@@ -161,24 +150,56 @@ local function SoltarPortal()
             PortalAzul.Color = Color3.fromRGB(0, 0, 255)
             PortalAzul.Parent = Workspace
             PortalAzul.Name = "PortalAzulLocal"
-
-            -- Sistema de pisar e teleportar
-            PortalAzul.Touched:Connect(function(hit)
-                if hit.Parent == char and PortalVerde and not EmCooldownTeleporte then
-                    EmCooldownTeleporte = true
-                    char.HumanoidRootPart.CFrame = PortalVerde.CFrame + Vector3.new(0, 3, 0)
-                    Rayfield:Notify({Title = "Portal", Content = "Teleportado para o Verde!", Duration = 1})
-                    task.wait(1.5) -- Tempo de recarga
-                    EmCooldownTeleporte = false
-                end
-            end)
         end
-        -- Move o portal azul para o jogador
         PortalAzul.CFrame = CFrame.new(posicaoChao)
         ProximoPortal = "Verde"
         Rayfield:Notify({Title = "Release", Content = "Portal Azul posicionado!", Duration = 2})
     end
 end
+
+-- Novo Sistema de Distância para o Teleporte (Funciona sem bugs de "Tocar")
+task.spawn(function()
+    while task.wait(0.1) do -- Checa a cada 0.1 segundos
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            local hrpPos = char.HumanoidRootPart.Position
+            
+            if PortalVerde and PortalAzul then
+                -- Distância pro Verde
+                local distVerde = (hrpPos - PortalVerde.Position).Magnitude
+                if distVerde <= 5 then -- Se estiver a 5 blocos ou menos (em cima do portal)
+                    TempoNoVerde = TempoNoVerde + 0.1
+                    if TempoNoVerde >= TempoParaTeleporte then
+                        -- Teleporta pro Azul
+                        char.HumanoidRootPart.CFrame = PortalAzul.CFrame + Vector3.new(0, 3, 0)
+                        TempoNoVerde = 0 -- Zera o tempo
+                        TempoNoAzul = 0 -- Zera o outro para não teleportar de volta sem querer
+                        Rayfield:Notify({Title = "Portal", Content = "Teleportado para o Azul!", Duration = 1, Image = 4483362458})
+                        task.wait(0.5) -- Pausa pro personagem estabilizar
+                    end
+                else
+                    TempoNoVerde = 0 -- Se sair de cima, zera o tempo
+                end
+                
+                -- Distância pro Azul
+                local distAzul = (hrpPos - PortalAzul.Position).Magnitude
+                if distAzul <= 5 then
+                    TempoNoAzul = TempoNoAzul + 0.1
+                    if TempoNoAzul >= TempoParaTeleporte then
+                        -- Teleporta pro Verde
+                        char.HumanoidRootPart.CFrame = PortalVerde.CFrame + Vector3.new(0, 3, 0)
+                        TempoNoAzul = 0
+                        TempoNoVerde = 0
+                        Rayfield:Notify({Title = "Portal", Content = "Teleportado para o Verde!", Duration = 1, Image = 4483362458})
+                        task.wait(0.5)
+                    end
+                else
+                    TempoNoAzul = 0
+                end
+            end
+        end
+    end
+end)
 
 -------------------------------------------------------------------------
 -- MENU DA INTERFACE (ABA-1)
@@ -330,8 +351,8 @@ local BotaoRelease = Tab2:CreateButton({
 
 -- Mensagem ao carregar
 Rayfield:Notify({
-    Title = "Painel Atualizado!",
-    Content = "Aba-2 e Portais Pessoais carregados.",
+    Title = "Portais Corrigidos!",
+    Content = "Fique 2 segundos no portal para teleportar.",
     Duration = 5,
     Image = 4483362458,
 })
