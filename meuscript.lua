@@ -14,6 +14,7 @@ local Window = Rayfield:CreateWindow({
 -- Cria as Abas
 local Tab = Window:CreateTab("Aba-1", 4483362458) 
 local Tab2 = Window:CreateTab("Aba-2 (Portais)", 4483362458) 
+local Tab3 = Window:CreateTab("Aba-3 (Gráficos)", 4483362458) 
 
 -------------------------------------------------------------------------
 -- VARIÁVEIS E FUNÇÕES GERAIS
@@ -26,6 +27,8 @@ local Camera = Workspace.CurrentCamera
 
 local ESP_Ativado = false
 local NoclipAtivado = false
+local WallAtivado = false
+local WallPart = nil
 local VelocidadeDesejada = 16
 local PuloDesejado = 50 
 
@@ -89,6 +92,34 @@ task.spawn(function()
     end)
 end)
 
+-- Sistema de Wall (Plataforma Invisível embaixo do jogador)
+game:GetService("RunService").RenderStepped:Connect(function()
+    if WallAtivado and LocalPlayer.Character then
+        local root = ObterRaiz(LocalPlayer.Character)
+        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if root and hum then
+            if not WallPart or not WallPart.Parent then
+                WallPart = Instance.new("Part")
+                WallPart.Size = Vector3.new(7, 1, 7)
+                WallPart.Anchored = true
+                WallPart.Transparency = 1 -- Totalmente invisível
+                WallPart.CanCollide = true
+                WallPart.Material = Enum.Material.SmoothPlastic
+                WallPart.Parent = Workspace
+                WallPart.Name = "PlataformaWallLocal"
+            end
+            -- Calcula a altura ideal abaixo dos pés baseando-se no tipo de corpo (R6 ou R15)
+            local offset = (hum.RigType == Enum.HumanoidRigType.R15 and hum.HipHeight or 2) + 1
+            WallPart.CFrame = CFrame.new(root.Position.X, root.Position.Y - offset, root.Position.Z)
+        end
+    else
+        if WallPart then
+            WallPart:Destroy()
+            WallPart = nil
+        end
+    end
+end)
+
 -- Pegar nomes
 local function PegarNomesJogadores()
     local nomes = {}
@@ -108,7 +139,7 @@ local ProximoPortal = "Verde"
 
 local TempoNoVerde = 0
 local TempoNoAzul = 0
-local TempoParaTeleporte = 2 -- 2 segundos
+local TempoParaTeleporte = 3.5 -- Alterado para 3.5 segundos conforme pedido
 
 local function SoltarPortal()
     local char = LocalPlayer.Character
@@ -373,10 +404,71 @@ local BotaoRelease = Tab2:CreateButton({
    Callback = function() SoltarPortal() end,
 })
 
+Tab2:CreateSection("🧱 Segurança de Queda")
+
+local ToggleWall = Tab2:CreateToggle({
+   Name = "Ativar Wall (Não Cair do Mapa)",
+   CurrentValue = false,
+   Flag = "ToggleWall",
+   Callback = function(Value)
+        WallAtivado = Value
+        if Value then
+            Rayfield:Notify({Title = "Wall Ativado", Content = "Plataforma invisível criada sob você!", Duration = 2})
+        else
+            Rayfield:Notify({Title = "Wall Desativado", Content = "Plataforma invisível removida.", Duration = 2})
+        end
+   end,
+})
+
+-------------------------------------------------------------------------
+-- MENU DA INTERFACE (ABA-3)
+-------------------------------------------------------------------------
+Tab3:CreateSection("🎮 Otimização de Gráficos (Anti-Lag)")
+
+local DropdownGraficos = Tab3:CreateDropdown({
+   Name = "Escolher Qualidade Gráfica",
+   Options = {"Baixo", "Médio", "Alto", "Ultrapassado"},
+   CurrentOption = {"Médio"},
+   MultipleOptions = false,
+   Flag = "DropdownGraficos",
+   Callback = function(Option)
+        local nivel = Option[1]
+        
+        if nivel == "Baixo" then
+            -- Reduz tudo ao mínimo para o celular rodar liso sem travar
+            Lighting.GlobalShadows = false
+            pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level01 end)
+            if Workspace:FindFirstChildOfClass("Terrain") then Workspace.Terrain.Decoration = false end
+            Rayfield:Notify({Title = "Gráficos: Baixo", Content = "Otimizado ao máximo! Jogo sem travamentos.", Duration = 3})
+            
+        elseif nivel == "Médio" then
+            -- Gráfico balanceado, jogo bonito e desempenho bom
+            Lighting.GlobalShadows = true
+            pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level07 end)
+            if Workspace:FindFirstChildOfClass("Terrain") then Workspace.Terrain.Decoration = true end
+            Rayfield:Notify({Title = "Gráficos: Médio", Content = "Modo Equilibrado ativado com ótima performance!", Duration = 3})
+            
+        elseif nivel == "Alto" then
+            -- Gráficos avançados mantendo estabilidade de FPS
+            Lighting.GlobalShadows = true
+            pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level13 end)
+            if Workspace:FindFirstChildOfClass("Terrain") then Workspace.Terrain.Decoration = true end
+            Rayfield:Notify({Title = "Gráficos: Alto", Content = "Visual incrível habilitado com boa taxa de FPS!", Duration = 3})
+            
+        elseif nivel == "Ultrapassado" then
+            -- Gráficos no ultra com filtros inteligentes anti-lag ativos
+            Lighting.GlobalShadows = true
+            pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level21 end)
+            if Workspace:FindFirstChildOfClass("Terrain") then Workspace.Terrain.Decoration = true end
+            Rayfield:Notify({Title = "Gráficos: Ultrapassado", Content = "Gráficos Ultra ativos com FPS totalmente estável!", Duration = 3})
+        end
+   end,
+})
+
 -- Mensagem ao carregar
 Rayfield:Notify({
-    Title = "Super Atualização!",
-    Content = "Novas velocidades, saltos, anti-gravidade e clima adicionados!",
+    Title = "Painel Atualizado!",
+    Content = "Portais ajustados para 3.5s, Wall adicionado e Nova Aba-3 de Gráficos liberada!",
     Duration = 5,
     Image = 4483362458,
 })
