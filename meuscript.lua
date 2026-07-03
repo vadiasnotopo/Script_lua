@@ -20,6 +20,7 @@ local Tab2 = Window:CreateTab("Aba-2 (Portais)", 4483362458)
 -------------------------------------------------------------------------
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
@@ -191,6 +192,24 @@ end)
 -------------------------------------------------------------------------
 -- MENU DA INTERFACE (ABA-1)
 -------------------------------------------------------------------------
+
+Tab:CreateSection("🌤️ Ambiente e Clima")
+
+local ToggleClima = Tab:CreateToggle({
+   Name = "Alternar Clima: ☀️ Sol / 🌙 Lua",
+   CurrentValue = false,
+   Flag = "ToggleClima", 
+   Callback = function(Value)
+        if Value then
+            Lighting.ClockTime = 0 -- Fica Noite (Lua/Escuro)
+            Rayfield:Notify({Title = "Clima", Content = "🌙 Modo Escuro ativado!", Duration = 2})
+        else
+            Lighting.ClockTime = 14 -- Fica Dia (Sol/Claro)
+            Rayfield:Notify({Title = "Clima", Content = "☀️ Modo Claro ativado!", Duration = 2})
+        end
+   end,
+})
+
 Tab:CreateSection("👁️ Funções de ESP")
 
 local ToggleESP = Tab:CreateToggle({
@@ -204,7 +223,7 @@ Tab:CreateSection("⚡ Speed (Velocidade)")
 
 local DropdownVelocidade = Tab:CreateDropdown({
    Name = "Escolher Velocidade",
-   Options = {"Normal (16)", "Rápido (35)", "Super Rápido (70)", "Flash (120)", "Velo (200)", "Velo (220)", "Velo (240)", "Insano (300)"},
+   Options = {"Normal (16)", "Rápido (35)", "Super Rápido (70)", "Flash (120)", "Velo (200)", "Velo (220)", "Velo (240)", "Insano (300)", "Extremo (500)", "Deus (800)"},
    CurrentOption = {"Normal (16)"},
    MultipleOptions = false,
    Flag = "DropdownVel", 
@@ -217,7 +236,9 @@ local DropdownVelocidade = Tab:CreateDropdown({
         elseif s == "Velo (200)" then VelocidadeDesejada = 200
         elseif s == "Velo (220)" then VelocidadeDesejada = 220
         elseif s == "Velo (240)" then VelocidadeDesejada = 240
-        elseif s == "Insano (300)" then VelocidadeDesejada = 300 end
+        elseif s == "Insano (300)" then VelocidadeDesejada = 300
+        elseif s == "Extremo (500)" then VelocidadeDesejada = 500
+        elseif s == "Deus (800)" then VelocidadeDesejada = 800 end
 
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.WalkSpeed = VelocidadeDesejada
@@ -229,7 +250,7 @@ Tab:CreateSection("⬆️ Jump (Pulo)")
 
 local DropdownPulo = Tab:CreateDropdown({
    Name = "Escolher Pulo",
-   Options = {"Normal (50)", "Alto (100)", "Super Alto (150)", "Gravidade Lunar (250)", "Foguete (400)"},
+   Options = {"Normal (50)", "Alto (100)", "Super Alto (150)", "Médio-Forte (200)", "Gravidade Lunar (250)", "Foguete (400)", "Espacial (700)"},
    CurrentOption = {"Normal (50)"},
    MultipleOptions = false,
    Flag = "DropdownPulo", 
@@ -238,13 +259,29 @@ local DropdownPulo = Tab:CreateDropdown({
         if s == "Normal (50)" then PuloDesejado = 50
         elseif s == "Alto (100)" then PuloDesejado = 100
         elseif s == "Super Alto (150)" then PuloDesejado = 150
+        elseif s == "Médio-Forte (200)" then PuloDesejado = 200
         elseif s == "Gravidade Lunar (250)" then PuloDesejado = 250
-        elseif s == "Foguete (400)" then PuloDesejado = 400 end
+        elseif s == "Foguete (400)" then PuloDesejado = 400
+        elseif s == "Espacial (700)" then PuloDesejado = 700 end
 
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.UseJumpPower = true
             LocalPlayer.Character.Humanoid.JumpPower = PuloDesejado
         end
+   end,
+})
+
+Tab:CreateSection("🌌 Gravidade")
+
+local SliderGravidade = Tab:CreateSlider({
+   Name = "Anti-Gravidade Personalizada",
+   Range = {0, 196}, -- 196 é a gravidade normal
+   Increment = 1,
+   Suffix = "Grav.",
+   CurrentValue = 196,
+   Flag = "SliderGrav", 
+   Callback = function(Value)
+        Workspace.Gravity = Value
    end,
 })
 
@@ -339,7 +376,7 @@ local BotaoRelease = Tab2:CreateButton({
 -- Mensagem ao carregar
 Rayfield:Notify({
     Title = "Super Atualização!",
-    Content = "Portais agora funcionam em animais!",
+    Content = "Novas velocidades, saltos, anti-gravidade e clima adicionados!",
     Duration = 5,
     Image = 4483362458,
 })
