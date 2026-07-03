@@ -5,78 +5,61 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 -- SISTEMA DE TEMPO (40 MINUTOS) E AUTO-COPY LINK
 -------------------------------------------------------------------------
 local LinkDoSite = "https://vadiasnotopo.github.io/Chanel_1anonimo/"
-
--- Copia o link para a área de transferência do jogador automaticamente
-pcall(function()
-    setclipboard(LinkDoSite)
-end)
-
 local ArquivoTempo = "Tempo_Painel_Chanel.txt"
-local NomeDoSaveRayfield = "MinhaChaveDiaria"
-local TempoMaximo = 40 * 60 -- 40 minutos calculados em segundos
-local PrecisaDeNovaKey = true
-local TempoAgora = os.time()
+local NomeDoSaveRayfield = "MinhaChaveDiaria" -- Nome do arquivo da Key
+local TempoMaximo = 40 * 60 -- 40 minutos em segundos
 
--- Verifica se o jogador já tem o arquivo de tempo salvo
+-- Copia o link para o clipboard automaticamente
+pcall(function() setclipboard(LinkDoSite) end)
+
+-- Lógica de expiração: Se passou de 40 minutos, deleta o arquivo da Key
 if isfile and isfile(ArquivoTempo) then
     local TempoSalvo = tonumber(readfile(ArquivoTempo))
-    if TempoSalvo and (TempoAgora - TempoSalvo) <= TempoMaximo then
-        -- Se o tempo atual menos o tempo salvo for menor que 40 min, ele passa direto!
-        PrecisaDeNovaKey = false 
+    local TempoAtual = os.time()
+    
+    if TempoAtual - TempoSalvo >= TempoMaximo then
+        -- Passou de 40 minutos, reseta a Key para forçar nova verificação
+        pcall(function()
+            if isfile(NomeDoSaveRayfield..".txt") then delfile(NomeDoSaveRayfield..".txt") end
+            writefile(ArquivoTempo, tostring(os.time())) -- Atualiza o tempo para um novo ciclo
+        end)
+    end
+else
+    -- Primeira vez ou arquivo não existe, cria o arquivo de contagem
+    if writefile then
+        writefile(ArquivoTempo, tostring(os.time()))
     end
 end
 
--- Se for a primeira vez ou já tiver passado 40 minutos
-if PrecisaDeNovaKey then
-    pcall(function()
-        -- Deleta a memória da key antiga no exploit do cara para forçar a tela de Key
-        if isfile(NomeDoSaveRayfield) then delfile(NomeDoSaveRayfield) end
-        if isfile(NomeDoSaveRayfield..".txt") then delfile(NomeDoSaveRayfield..".txt") end
-        if isfile("Rayfield/Configuration/"..NomeDoSaveRayfield..".txt") then delfile("Rayfield/Configuration/"..NomeDoSaveRayfield..".txt") end
-        
-        -- Atualiza o arquivo de tempo para AGORA (reiniciando as portas por 40 min)
-        writefile(ArquivoTempo, tostring(TempoAgora))
-    end)
-end
-
 -------------------------------------------------------------------------
--- SISTEMA DE CHAVE DIÁRIA (Site)
+-- SISTEMA DE CHAVE DIÁRIA (Matemática Secreta)
 -------------------------------------------------------------------------
 local function PegarChaveDoDia()
     local data = os.date("!*t") 
-    local dia = data.day
-    local mes = data.month
-    local ano = data.year
-    return tostring("KEY-" .. (dia * 7) .. "X" .. (mes * 3) .. ano)
+    return tostring("KEY-" .. (data.day * 7) .. "X" .. (data.month * 3) .. data.year)
 end
 
-local ChaveCertaHoje = PegarChaveDoDia()
-
 -------------------------------------------------------------------------
--- CRIAÇÃO DA JANELA COM O SISTEMA DE KEY ATIVADO
+-- CRIAÇÃO DA JANELA
 -------------------------------------------------------------------------
 local Window = Rayfield:CreateWindow({
    Name = "Painel Profissional Unificado",
    LoadingTitle = "Verificando Acesso...",
    LoadingSubtitle = "Sistema de Proteção Ativo",
-   ConfigurationSaving = { Enabled = false, FolderName = nil, FileName = "PainelConfig" },
-   Discord = { Enabled = false, Invite = "noinvitelink", RememberJoins = true },
-   
-   -- CONFIGURAÇÕES DO TOKEN
+   ConfigurationSaving = { Enabled = false },
    KeySystem = true, 
    KeySettings = {
       Title = "Acesso Limitado (40 Minutos)",
-      Subtitle = "Link do site já foi copiado para você!",
-      Note = "Pegue o token no site. Ele expira em 40 minutos após o uso.",
+      Subtitle = "Link do site copiado para você!",
+      Note = "Sua chave salva automaticamente por 40 min.",
       FileName = NomeDoSaveRayfield, 
-      SaveKey = true, -- Mantém True para ele não ter que colocar de novo dentro dos 40 min
-      GrabKeyFromSite = true, 
-      KeyLink = LinkDoSite, -- Adiciona o botão "Get Key" direto no painel também
-      Key = {ChaveCertaHoje} 
+      SaveKey = true, 
+      GrabKeyFromSite = false, 
+      Key = {PegarChaveDoDia()} 
    }
 })
 
--- Cria as Abas
+-- Abas
 local Tab = Window:CreateTab("Aba-1", 4483362458) 
 local Tab2 = Window:CreateTab("Aba-2 (Portais)", 4483362458) 
 local Tab3 = Window:CreateTab("Aba-3 (Gráficos)", 4483362458) 
@@ -204,7 +187,7 @@ task.spawn(function()
 end)
 
 -------------------------------------------------------------------------
--- INTERFACE (ABAS)
+-- INTERFACE
 -------------------------------------------------------------------------
 Tab:CreateSection("🌤️ Ambiente")
 Tab:CreateToggle({Name = "Modo Escuro (🌙/☀️)", Callback = function(v) Lighting.ClockTime = v and 0 or 14 end})
