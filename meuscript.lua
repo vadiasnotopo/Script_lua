@@ -31,7 +31,9 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
 local ESP_Ativado = false
+local NoclipAtivado = false
 local VelocidadeDesejada = 16
+local PuloDesejado = 50 -- 50 é o pulo padrão do Roblox
 
 -- Sistema de ESP (Ver jogadores)
 task.spawn(function()
@@ -59,12 +61,34 @@ task.spawn(function()
     end
 end)
 
--- Sistema para manter a Velocidade
+-- Sistema para manter a Velocidade e o Pulo
 task.spawn(function()
     game:GetService("RunService").RenderStepped:Connect(function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            local humanoid = LocalPlayer.Character.Humanoid
+            
+            -- Mantém a Velocidade
             if VelocidadeDesejada ~= 16 then
-                LocalPlayer.Character.Humanoid.WalkSpeed = VelocidadeDesejada
+                humanoid.WalkSpeed = VelocidadeDesejada
+            end
+            
+            -- Mantém o Pulo
+            if PuloDesejado ~= 50 then
+                humanoid.UseJumpPower = true
+                humanoid.JumpPower = PuloDesejado
+            end
+        end
+    end)
+end)
+
+-- Sistema de Atravessar Parede (Noclip)
+task.spawn(function()
+    game:GetService("RunService").Stepped:Connect(function()
+        if NoclipAtivado and LocalPlayer.Character then
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") and part.CanCollide then
+                    part.CanCollide = false
+                end
             end
         end
     end)
@@ -132,9 +156,48 @@ local DropdownVelocidade = Tab:CreateDropdown({
    end,
 })
 
+-- 3. Escolher Pulo
+local DropdownPulo = Tab:CreateDropdown({
+   Name = "Escolher Pulo",
+   Options = {"Normal (50)", "Alto (100)", "Super Alto (150)", "Gravidade Lunar (250)", "Foguete (400)"},
+   CurrentOption = {"Normal (50)"},
+   MultipleOptions = false,
+   Flag = "DropdownPulo", 
+   Callback = function(Option)
+        local selecionado = Option[1]
+        
+        if selecionado == "Normal (50)" then PuloDesejado = 50
+        elseif selecionado == "Alto (100)" then PuloDesejado = 100
+        elseif selecionado == "Super Alto (150)" then PuloDesejado = 150
+        elseif selecionado == "Gravidade Lunar (250)" then PuloDesejado = 250
+        elseif selecionado == "Foguete (400)" then PuloDesejado = 400
+        end
+
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.UseJumpPower = true
+            LocalPlayer.Character.Humanoid.JumpPower = PuloDesejado
+        end
+   end,
+})
+
+-- 4. Botão de Atravessar Parede (Noclip)
+local ToggleNoclip = Tab:CreateToggle({
+   Name = "Atravessar Parede (Noclip)",
+   CurrentValue = false,
+   Flag = "ToggleNoclip", 
+   Callback = function(Value)
+        NoclipAtivado = Value
+        if Value then
+            Rayfield:Notify({Title = "Noclip", Content = "Ativado! Você pode atravessar paredes.", Duration = 2, Image = 4483362458})
+        else
+            Rayfield:Notify({Title = "Noclip", Content = "Desativado.", Duration = 2, Image = 4483362458})
+        end
+   end,
+})
+
 Tab:CreateSection("Telp (Teleporte)")
 
--- 3. Menu de Teleporte
+-- 5. Menu de Teleporte
 local DropdownTeleporte = Tab:CreateDropdown({
    Name = "Telp: Escolher Jogador",
    Options = PegarNomesJogadores(),
@@ -157,7 +220,7 @@ local DropdownTeleporte = Tab:CreateDropdown({
 
 Tab:CreateSection("Visual (Assistir Tela)")
 
--- 4. Menu de Visual / Spectate
+-- 6. Menu de Visual / Spectate
 local DropdownVisual = Tab:CreateDropdown({
    Name = "Visual: Escolher Jogador",
    Options = PegarNomesJogadores(),
@@ -169,7 +232,6 @@ local DropdownVisual = Tab:CreateDropdown({
         if nomeAlvo and nomeAlvo ~= "Nenhum outro jogador" and nomeAlvo ~= "" then
             local JogadorAlvo = Players:FindFirstChild(nomeAlvo)
             if JogadorAlvo and JogadorAlvo.Character and JogadorAlvo.Character:FindFirstChild("Humanoid") then
-                -- Muda o foco da sua câmera para o personagem do outro jogador
                 Camera.CameraSubject = JogadorAlvo.Character.Humanoid
                 Rayfield:Notify({Title = "Visual Ativado", Content = "Assistindo a tela de: " .. nomeAlvo, Duration = 3, Image = 4483362458})
             else
@@ -179,11 +241,10 @@ local DropdownVisual = Tab:CreateDropdown({
    end,
 })
 
--- 5. Botão para Sair do Visual
+-- 7. Botão para Sair do Visual
 local BotaoSairVisual = Tab:CreateButton({
    Name = "Desativar Visual (Voltar para mim)",
    Callback = function()
-        -- Retorna o foco da câmera para o SEU personagem
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             Camera.CameraSubject = LocalPlayer.Character.Humanoid
             Rayfield:Notify({Title = "Visual Desativado", Content = "A câmera voltou para você.", Duration = 3, Image = 4483362458})
@@ -193,7 +254,7 @@ local BotaoSairVisual = Tab:CreateButton({
 
 Tab:CreateSection("Utilitários")
 
--- 6. Botão para atualizar TODAS as listas
+-- 8. Botão para atualizar TODAS as listas
 local BotaoAtualizarLista = Tab:CreateButton({
    Name = "Atualizar Listas (Jogadores Novos)",
    Callback = function()
@@ -207,7 +268,8 @@ local BotaoAtualizarLista = Tab:CreateButton({
 -- Mensagem ao carregar
 Rayfield:Notify({
     Title = "Painel Atualizado!",
-    Content = "Visual e Botão de Sair carregados.",
+    Content = "Pulo e Noclip carregados com sucesso.",
     Duration = 5,
     Image = 4483362458,
 })
+
