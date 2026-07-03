@@ -2,14 +2,51 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -------------------------------------------------------------------------
--- SISTEMA DE CHAVE DIÁRIA (Sincronizado perfeitamente com o site)
+-- SISTEMA DE TEMPO (40 MINUTOS) E AUTO-COPY LINK
+-------------------------------------------------------------------------
+local LinkDoSite = "https://vadiasnotopo.github.io/Chanel_1anonimo/"
+
+-- Copia o link para a área de transferência do jogador automaticamente
+pcall(function()
+    setclipboard(LinkDoSite)
+end)
+
+local ArquivoTempo = "Tempo_Painel_Chanel.txt"
+local NomeDoSaveRayfield = "MinhaChaveDiaria"
+local TempoMaximo = 40 * 60 -- 40 minutos calculados em segundos
+local PrecisaDeNovaKey = true
+local TempoAgora = os.time()
+
+-- Verifica se o jogador já tem o arquivo de tempo salvo
+if isfile and isfile(ArquivoTempo) then
+    local TempoSalvo = tonumber(readfile(ArquivoTempo))
+    if TempoSalvo and (TempoAgora - TempoSalvo) <= TempoMaximo then
+        -- Se o tempo atual menos o tempo salvo for menor que 40 min, ele passa direto!
+        PrecisaDeNovaKey = false 
+    end
+end
+
+-- Se for a primeira vez ou já tiver passado 40 minutos
+if PrecisaDeNovaKey then
+    pcall(function()
+        -- Deleta a memória da key antiga no exploit do cara para forçar a tela de Key
+        if isfile(NomeDoSaveRayfield) then delfile(NomeDoSaveRayfield) end
+        if isfile(NomeDoSaveRayfield..".txt") then delfile(NomeDoSaveRayfield..".txt") end
+        if isfile("Rayfield/Configuration/"..NomeDoSaveRayfield..".txt") then delfile("Rayfield/Configuration/"..NomeDoSaveRayfield..".txt") end
+        
+        -- Atualiza o arquivo de tempo para AGORA (reiniciando as portas por 40 min)
+        writefile(ArquivoTempo, tostring(TempoAgora))
+    end)
+end
+
+-------------------------------------------------------------------------
+-- SISTEMA DE CHAVE DIÁRIA (Site)
 -------------------------------------------------------------------------
 local function PegarChaveDoDia()
-    local data = os.date("!*t") -- Data UTC para bater direto com o site
+    local data = os.date("!*t") 
     local dia = data.day
     local mes = data.month
     local ano = data.year
-    -- A matemática secreta idêntica ao JS do site: KEY-Dia*7-Mes*3-Ano
     return tostring("KEY-" .. (dia * 7) .. "X" .. (mes * 3) .. ano)
 end
 
@@ -25,16 +62,17 @@ local Window = Rayfield:CreateWindow({
    ConfigurationSaving = { Enabled = false, FolderName = nil, FileName = "PainelConfig" },
    Discord = { Enabled = false, Invite = "noinvitelink", RememberJoins = true },
    
-   -- CONFIGURAÇÕES DO TOKEN (Chave salva por sessão no exploit)
+   -- CONFIGURAÇÕES DO TOKEN
    KeySystem = true, 
    KeySettings = {
-      Title = "Sistema de Acesso",
-      Subtitle = "Resolva a continha no site para obter o Token",
-      Note = "O Token muda diariamente. Uma vez colocado, ele fica salvo!",
-      FileName = "MinhaChaveDiaria", -- Arquivo que salva o token no PC/Celular do cara
-      SaveKey = true, -- TRUE faz salvar a chave para ele não ter que por toda hora que reentrar!
-      GrabKeyFromSite = false, 
-      Key = {ChaveCertaHoje} -- Valida com a conta matemática do dia
+      Title = "Acesso Limitado (40 Minutos)",
+      Subtitle = "Link do site já foi copiado para você!",
+      Note = "Pegue o token no site. Ele expira em 40 minutos após o uso.",
+      FileName = NomeDoSaveRayfield, 
+      SaveKey = true, -- Mantém True para ele não ter que colocar de novo dentro dos 40 min
+      GrabKeyFromSite = true, 
+      KeyLink = LinkDoSite, -- Adiciona o botão "Get Key" direto no painel também
+      Key = {ChaveCertaHoje} 
    }
 })
 
