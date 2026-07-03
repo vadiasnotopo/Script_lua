@@ -19,11 +19,12 @@ local Window = Rayfield:CreateWindow({
    KeySystem = false,
 })
 
--- Cria a Aba-1
+-- Cria as Abas
 local Tab = Window:CreateTab("Aba-1", 4483362458) 
+local Tab2 = Window:CreateTab("Aba-2 (Portais)", 4483362458) 
 
 -------------------------------------------------------------------------
--- VARIÁVEIS E FUNÇÕES GERAIS
+-- VARIÁVEIS E FUNÇÕES GERAIS (ABA-1)
 -------------------------------------------------------------------------
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -33,9 +34,9 @@ local Camera = Workspace.CurrentCamera
 local ESP_Ativado = false
 local NoclipAtivado = false
 local VelocidadeDesejada = 16
-local PuloDesejado = 50 -- 50 é o pulo padrão do Roblox
+local PuloDesejado = 50 
 
--- Sistema de ESP (Ver jogadores)
+-- Sistema de ESP
 task.spawn(function()
     while task.wait(1) do
         if ESP_Ativado then
@@ -61,18 +62,16 @@ task.spawn(function()
     end
 end)
 
--- Sistema para manter a Velocidade e o Pulo
+-- Sistema de Movimentação (Velocidade e Pulo)
 task.spawn(function()
     game:GetService("RunService").RenderStepped:Connect(function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             local humanoid = LocalPlayer.Character.Humanoid
             
-            -- Mantém a Velocidade
             if VelocidadeDesejada ~= 16 then
                 humanoid.WalkSpeed = VelocidadeDesejada
             end
             
-            -- Mantém o Pulo
             if PuloDesejado ~= 50 then
                 humanoid.UseJumpPower = true
                 humanoid.JumpPower = PuloDesejado
@@ -81,7 +80,7 @@ task.spawn(function()
     end)
 end)
 
--- Sistema de Atravessar Parede (Noclip)
+-- Sistema de Noclip
 task.spawn(function()
     game:GetService("RunService").Stepped:Connect(function()
         if NoclipAtivado and LocalPlayer.Character then
@@ -94,7 +93,7 @@ task.spawn(function()
     end)
 end)
 
--- Função para pegar o nome dos jogadores no mapa
+-- Pegar nomes
 local function PegarNomesJogadores()
     local nomes = {}
     for _, player in pairs(Players:GetPlayers()) do
@@ -109,28 +108,94 @@ local function PegarNomesJogadores()
 end
 
 -------------------------------------------------------------------------
+-- SISTEMA DE PORTAIS (ABA-2)
+-------------------------------------------------------------------------
+local PortalVerde = nil
+local PortalAzul = nil
+local ProximoPortal = "Verde"
+local EmCooldownTeleporte = false -- Evita loop infinito de teleporte
+
+local function SoltarPortal()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    
+    -- Pega a posição do jogador e joga um pouco para baixo (para ficar no chão)
+    local posicaoChao = char.HumanoidRootPart.Position - Vector3.new(0, 3, 0)
+
+    if ProximoPortal == "Verde" then
+        if not PortalVerde then
+            -- Cria o bloco Verde se não existir
+            PortalVerde = Instance.new("Part")
+            PortalVerde.Size = Vector3.new(6, 0.2, 6) -- Grandinho e achatado
+            PortalVerde.Anchored = true
+            PortalVerde.CanCollide = false
+            PortalVerde.Material = Enum.Material.Neon
+            PortalVerde.Color = Color3.fromRGB(0, 255, 0)
+            PortalVerde.Parent = Workspace
+            PortalVerde.Name = "PortalVerdeLocal"
+
+            -- Sistema de pisar e teleportar
+            PortalVerde.Touched:Connect(function(hit)
+                if hit.Parent == char and PortalAzul and not EmCooldownTeleporte then
+                    EmCooldownTeleporte = true
+                    char.HumanoidRootPart.CFrame = PortalAzul.CFrame + Vector3.new(0, 3, 0)
+                    Rayfield:Notify({Title = "Portal", Content = "Teleportado para o Azul!", Duration = 1})
+                    task.wait(1.5) -- Tempo de recarga
+                    EmCooldownTeleporte = false
+                end
+            end)
+        end
+        -- Move o portal verde para o jogador
+        PortalVerde.CFrame = CFrame.new(posicaoChao)
+        ProximoPortal = "Azul"
+        Rayfield:Notify({Title = "Release", Content = "Portal Verde posicionado!", Duration = 2})
+
+    else
+        if not PortalAzul then
+            -- Cria o bloco Azul se não existir
+            PortalAzul = Instance.new("Part")
+            PortalAzul.Size = Vector3.new(6, 0.2, 6)
+            PortalAzul.Anchored = true
+            PortalAzul.CanCollide = false
+            PortalAzul.Material = Enum.Material.Neon
+            PortalAzul.Color = Color3.fromRGB(0, 0, 255)
+            PortalAzul.Parent = Workspace
+            PortalAzul.Name = "PortalAzulLocal"
+
+            -- Sistema de pisar e teleportar
+            PortalAzul.Touched:Connect(function(hit)
+                if hit.Parent == char and PortalVerde and not EmCooldownTeleporte then
+                    EmCooldownTeleporte = true
+                    char.HumanoidRootPart.CFrame = PortalVerde.CFrame + Vector3.new(0, 3, 0)
+                    Rayfield:Notify({Title = "Portal", Content = "Teleportado para o Verde!", Duration = 1})
+                    task.wait(1.5) -- Tempo de recarga
+                    EmCooldownTeleporte = false
+                end
+            end)
+        end
+        -- Move o portal azul para o jogador
+        PortalAzul.CFrame = CFrame.new(posicaoChao)
+        ProximoPortal = "Verde"
+        Rayfield:Notify({Title = "Release", Content = "Portal Azul posicionado!", Duration = 2})
+    end
+end
+
+-------------------------------------------------------------------------
 -- MENU DA INTERFACE (ABA-1)
 -------------------------------------------------------------------------
 Tab:CreateSection("👁️ Funções de ESP")
 
--- 1. Botão de Ligar/Desligar ESP
 local ToggleESP = Tab:CreateToggle({
    Name = "Ativar ESP (Ver Jogadores)",
    CurrentValue = false,
    Flag = "ToggleESP", 
    Callback = function(Value)
         ESP_Ativado = Value
-        if Value then
-            Rayfield:Notify({Title = "ESP", Content = "Ativado!", Duration = 2, Image = 4483362458})
-        else
-            Rayfield:Notify({Title = "ESP", Content = "Desativado.", Duration = 2, Image = 4483362458})
-        end
    end,
 })
 
 Tab:CreateSection("⚡ Speed (Velocidade)")
 
--- 2. Escolher Velocidade
 local DropdownVelocidade = Tab:CreateDropdown({
    Name = "Escolher Velocidade",
    Options = {"Normal (16)", "Rápido (35)", "Super Rápido (70)", "Flash (120)", "Velo (200)", "Velo (220)", "Velo (240)", "Insano (300)"},
@@ -139,7 +204,6 @@ local DropdownVelocidade = Tab:CreateDropdown({
    Flag = "DropdownVel", 
    Callback = function(Option)
         local selecionado = Option[1]
-        
         if selecionado == "Normal (16)" then VelocidadeDesejada = 16
         elseif selecionado == "Rápido (35)" then VelocidadeDesejada = 35
         elseif selecionado == "Super Rápido (70)" then VelocidadeDesejada = 70
@@ -158,7 +222,6 @@ local DropdownVelocidade = Tab:CreateDropdown({
 
 Tab:CreateSection("⬆️ Jump (Pulo)")
 
--- 3. Escolher Pulo
 local DropdownPulo = Tab:CreateDropdown({
    Name = "Escolher Pulo",
    Options = {"Normal (50)", "Alto (100)", "Super Alto (150)", "Gravidade Lunar (250)", "Foguete (400)"},
@@ -167,7 +230,6 @@ local DropdownPulo = Tab:CreateDropdown({
    Flag = "DropdownPulo", 
    Callback = function(Option)
         local selecionado = Option[1]
-        
         if selecionado == "Normal (50)" then PuloDesejado = 50
         elseif selecionado == "Alto (100)" then PuloDesejado = 100
         elseif selecionado == "Super Alto (150)" then PuloDesejado = 150
@@ -184,24 +246,17 @@ local DropdownPulo = Tab:CreateDropdown({
 
 Tab:CreateSection("👻 Atravessar Parede (Noclip)")
 
--- 4. Botão de Atravessar Parede (Noclip)
 local ToggleNoclip = Tab:CreateToggle({
    Name = "Ativar Noclip",
    CurrentValue = false,
    Flag = "ToggleNoclip", 
    Callback = function(Value)
         NoclipAtivado = Value
-        if Value then
-            Rayfield:Notify({Title = "Noclip", Content = "Ativado! Você pode atravessar paredes.", Duration = 2, Image = 4483362458})
-        else
-            Rayfield:Notify({Title = "Noclip", Content = "Desativado.", Duration = 2, Image = 4483362458})
-        end
    end,
 })
 
 Tab:CreateSection("📍 Telp (Teleporte)")
 
--- 5. Menu de Teleporte
 local DropdownTeleporte = Tab:CreateDropdown({
    Name = "Telp: Escolher Jogador",
    Options = PegarNomesJogadores(),
@@ -215,7 +270,6 @@ local DropdownTeleporte = Tab:CreateDropdown({
             if JogadorAlvo and JogadorAlvo.Character and JogadorAlvo.Character:FindFirstChild("HumanoidRootPart") then
                 if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                     LocalPlayer.Character.HumanoidRootPart.CFrame = JogadorAlvo.Character.HumanoidRootPart.CFrame
-                    Rayfield:Notify({Title = "Teleporte", Content = "Você foi até " .. nomeAlvo, Duration = 3, Image = 4483362458})
                 end
             end
         end
@@ -224,7 +278,6 @@ local DropdownTeleporte = Tab:CreateDropdown({
 
 Tab:CreateSection("🎥 Visual (Assistir Tela)")
 
--- 6. Menu de Visual / Spectate
 local DropdownVisual = Tab:CreateDropdown({
    Name = "Visual: Escolher Jogador",
    Options = PegarNomesJogadores(),
@@ -237,42 +290,48 @@ local DropdownVisual = Tab:CreateDropdown({
             local JogadorAlvo = Players:FindFirstChild(nomeAlvo)
             if JogadorAlvo and JogadorAlvo.Character and JogadorAlvo.Character:FindFirstChild("Humanoid") then
                 Camera.CameraSubject = JogadorAlvo.Character.Humanoid
-                Rayfield:Notify({Title = "Visual Ativado", Content = "Assistindo a tela de: " .. nomeAlvo, Duration = 3, Image = 4483362458})
-            else
-                Rayfield:Notify({Title = "Erro", Content = "Jogador não está vivo no momento.", Duration = 3})
             end
         end
    end,
 })
 
--- 7. Botão para Sair do Visual
 local BotaoSairVisual = Tab:CreateButton({
    Name = "Desativar Visual (Voltar para mim)",
    Callback = function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             Camera.CameraSubject = LocalPlayer.Character.Humanoid
-            Rayfield:Notify({Title = "Visual Desativado", Content = "A câmera voltou para você.", Duration = 3, Image = 4483362458})
         end
    end,
 })
 
 Tab:CreateSection("⚙️ Utilitários")
 
--- 8. Botão para atualizar TODAS as listas
 local BotaoAtualizarLista = Tab:CreateButton({
    Name = "Atualizar Listas (Jogadores Novos)",
    Callback = function()
         local novaLista = PegarNomesJogadores()
         DropdownTeleporte:Refresh(novaLista)
         DropdownVisual:Refresh(novaLista)
-        Rayfield:Notify({Title = "Listas Atualizadas", Content = "As opções de Telp e Visual foram atualizadas!", Duration = 2})
+        Rayfield:Notify({Title = "Listas Atualizadas", Content = "Atualizado com sucesso!", Duration = 2})
+   end,
+})
+
+-------------------------------------------------------------------------
+-- MENU DA INTERFACE (ABA-2)
+-------------------------------------------------------------------------
+Tab2:CreateSection("🌌 Sistema de Portais (Apenas Você Vê)")
+
+local BotaoRelease = Tab2:CreateButton({
+   Name = "(Release) - Soltar Portal",
+   Callback = function()
+        SoltarPortal()
    end,
 })
 
 -- Mensagem ao carregar
 Rayfield:Notify({
-    Title = "Painel Organizado!",
-    Content = "Tudo separado em categorias.",
+    Title = "Painel Atualizado!",
+    Content = "Aba-2 e Portais Pessoais carregados.",
     Duration = 5,
     Image = 4483362458,
 })
