@@ -1,14 +1,41 @@
 -- Carrega a Biblioteca de UI Profissional (Rayfield)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Cria a Janela Principal do Painel
+-------------------------------------------------------------------------
+-- SISTEMA DE CHAVE DIÁRIA (Sincronizado perfeitamente com o site)
+-------------------------------------------------------------------------
+local function PegarChaveDoDia()
+    local data = os.date("!*t") -- Data UTC para bater direto com o site
+    local dia = data.day
+    local mes = data.month
+    local ano = data.year
+    -- A matemática secreta idêntica ao JS do site: KEY-Dia*7-Mes*3-Ano
+    return tostring("KEY-" .. (dia * 7) .. "X" .. (mes * 3) .. ano)
+end
+
+local ChaveCertaHoje = PegarChaveDoDia()
+
+-------------------------------------------------------------------------
+-- CRIAÇÃO DA JANELA COM O SISTEMA DE KEY ATIVADO
+-------------------------------------------------------------------------
 local Window = Rayfield:CreateWindow({
    Name = "Painel Profissional Unificado",
-   LoadingTitle = "Carregando Scripts...",
-   LoadingSubtitle = "por Você",
+   LoadingTitle = "Verificando Acesso...",
+   LoadingSubtitle = "Sistema de Proteção Ativo",
    ConfigurationSaving = { Enabled = false, FolderName = nil, FileName = "PainelConfig" },
    Discord = { Enabled = false, Invite = "noinvitelink", RememberJoins = true },
-   KeySystem = false,
+   
+   -- CONFIGURAÇÕES DO TOKEN (Chave salva por sessão no exploit)
+   KeySystem = true, 
+   KeySettings = {
+      Title = "Sistema de Acesso",
+      Subtitle = "Resolva a continha no site para obter o Token",
+      Note = "O Token muda diariamente. Uma vez colocado, ele fica salvo!",
+      FileName = "MinhaChaveDiaria", -- Arquivo que salva o token no PC/Celular do cara
+      SaveKey = true, -- TRUE faz salvar a chave para ele não ter que por toda hora que reentrar!
+      GrabKeyFromSite = false, 
+      Key = {ChaveCertaHoje} -- Valida com a conta matemática do dia
+   }
 })
 
 -- Cria as Abas
@@ -165,4 +192,3 @@ Tab3:CreateDropdown({Name = "Otimização Gráfica", Options = {"Baixo", "Médio
 end})
 
 Rayfield:Notify({Title = "Painel Pronto!", Content = "Todas as funções carregadas com sucesso.", Duration = 5})
-
