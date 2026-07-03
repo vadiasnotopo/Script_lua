@@ -6,16 +6,8 @@ local Window = Rayfield:CreateWindow({
    Name = "Painel Profissional",
    LoadingTitle = "Carregando Scripts...",
    LoadingSubtitle = "por Você",
-   ConfigurationSaving = {
-      Enabled = false,
-      FolderName = nil,
-      FileName = "PainelConfig"
-   },
-   Discord = {
-      Enabled = false,
-      Invite = "noinvitelink",
-      RememberJoins = true 
-   },
+   ConfigurationSaving = { Enabled = false, FolderName = nil, FileName = "PainelConfig" },
+   Discord = { Enabled = false, Invite = "noinvitelink", RememberJoins = true },
    KeySystem = false,
 })
 
@@ -24,7 +16,7 @@ local Tab = Window:CreateTab("Aba-1", 4483362458)
 local Tab2 = Window:CreateTab("Aba-2 (Portais)", 4483362458) 
 
 -------------------------------------------------------------------------
--- VARIÁVEIS E FUNÇÕES GERAIS (ABA-1)
+-- VARIÁVEIS E FUNÇÕES GERAIS
 -------------------------------------------------------------------------
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -35,6 +27,16 @@ local ESP_Ativado = false
 local NoclipAtivado = false
 local VelocidadeDesejada = 16
 local PuloDesejado = 50 
+
+-- FUNÇÃO NOVA: Acha a peça principal do corpo, não importa se é humano ou animal
+local function ObterRaiz(char)
+    if not char then return nil end
+    if char.PrimaryPart then return char.PrimaryPart end
+    if char:FindFirstChild("HumanoidRootPart") then return char.HumanoidRootPart end
+    if char:FindFirstChild("Torso") then return char.Torso end
+    if char:FindFirstChild("UpperTorso") then return char.UpperTorso end
+    return char:FindFirstChildWhichIsA("BasePart") -- Pega qualquer parte do corpo como último recurso
+end
 
 -- Sistema de ESP
 task.spawn(function()
@@ -67,15 +69,8 @@ task.spawn(function()
     game:GetService("RunService").RenderStepped:Connect(function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             local humanoid = LocalPlayer.Character.Humanoid
-            
-            if VelocidadeDesejada ~= 16 then
-                humanoid.WalkSpeed = VelocidadeDesejada
-            end
-            
-            if PuloDesejado ~= 50 then
-                humanoid.UseJumpPower = true
-                humanoid.JumpPower = PuloDesejado
-            end
+            if VelocidadeDesejada ~= 16 then humanoid.WalkSpeed = VelocidadeDesejada end
+            if PuloDesejado ~= 50 then humanoid.UseJumpPower = true humanoid.JumpPower = PuloDesejado end
         end
     end)
 end)
@@ -97,13 +92,9 @@ end)
 local function PegarNomesJogadores()
     local nomes = {}
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            table.insert(nomes, player.Name)
-        end
+        if player ~= LocalPlayer then table.insert(nomes, player.Name) end
     end
-    if #nomes == 0 then
-        table.insert(nomes, "Nenhum outro jogador")
-    end
+    if #nomes == 0 then table.insert(nomes, "Nenhum outro jogador") end
     return nomes
 end
 
@@ -114,16 +105,16 @@ local PortalVerde = nil
 local PortalAzul = nil
 local ProximoPortal = "Verde"
 
--- Contadores de tempo (Para ficar 2 segundos em cima)
 local TempoNoVerde = 0
 local TempoNoAzul = 0
 local TempoParaTeleporte = 2 -- 2 segundos
 
 local function SoltarPortal()
     local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local root = ObterRaiz(char) -- Usa o scanner inteligente
+    if not root then return end
     
-    local posicaoChao = char.HumanoidRootPart.Position - Vector3.new(0, 3, 0)
+    local posicaoChao = root.Position - Vector3.new(0, 3, 0)
 
     if ProximoPortal == "Verde" then
         if not PortalVerde then
@@ -157,45 +148,41 @@ local function SoltarPortal()
     end
 end
 
--- Novo Sistema de Distância para o Teleporte (Funciona sem bugs de "Tocar")
+-- Scanner de distância (Radar)
 task.spawn(function()
-    while task.wait(0.1) do -- Checa a cada 0.1 segundos
+    while task.wait(0.1) do 
         local char = LocalPlayer.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            local hrpPos = char.HumanoidRootPart.Position
+        local root = ObterRaiz(char) -- Funciona mesmo em animais
+        
+        if root and PortalVerde and PortalAzul then
+            local hrpPos = root.Position
             
-            if PortalVerde and PortalAzul then
-                -- Distância pro Verde
-                local distVerde = (hrpPos - PortalVerde.Position).Magnitude
-                if distVerde <= 5 then -- Se estiver a 5 blocos ou menos (em cima do portal)
-                    TempoNoVerde = TempoNoVerde + 0.1
-                    if TempoNoVerde >= TempoParaTeleporte then
-                        -- Teleporta pro Azul
-                        char.HumanoidRootPart.CFrame = PortalAzul.CFrame + Vector3.new(0, 3, 0)
-                        TempoNoVerde = 0 -- Zera o tempo
-                        TempoNoAzul = 0 -- Zera o outro para não teleportar de volta sem querer
-                        Rayfield:Notify({Title = "Portal", Content = "Teleportado para o Azul!", Duration = 1, Image = 4483362458})
-                        task.wait(0.5) -- Pausa pro personagem estabilizar
-                    end
-                else
-                    TempoNoVerde = 0 -- Se sair de cima, zera o tempo
-                end
-                
-                -- Distância pro Azul
-                local distAzul = (hrpPos - PortalAzul.Position).Magnitude
-                if distAzul <= 5 then
-                    TempoNoAzul = TempoNoAzul + 0.1
-                    if TempoNoAzul >= TempoParaTeleporte then
-                        -- Teleporta pro Verde
-                        char.HumanoidRootPart.CFrame = PortalVerde.CFrame + Vector3.new(0, 3, 0)
-                        TempoNoAzul = 0
-                        TempoNoVerde = 0
-                        Rayfield:Notify({Title = "Portal", Content = "Teleportado para o Verde!", Duration = 1, Image = 4483362458})
-                        task.wait(0.5)
-                    end
-                else
+            -- Distância pro Verde
+            local distVerde = (hrpPos - PortalVerde.Position).Magnitude
+            if distVerde <= 6 then 
+                TempoNoVerde = TempoNoVerde + 0.1
+                if TempoNoVerde >= TempoParaTeleporte then
+                    root.CFrame = PortalAzul.CFrame + Vector3.new(0, 3, 0)
+                    TempoNoVerde = 0
                     TempoNoAzul = 0
+                    task.wait(0.5) 
                 end
+            else
+                TempoNoVerde = 0 
+            end
+            
+            -- Distância pro Azul
+            local distAzul = (hrpPos - PortalAzul.Position).Magnitude
+            if distAzul <= 6 then
+                TempoNoAzul = TempoNoAzul + 0.1
+                if TempoNoAzul >= TempoParaTeleporte then
+                    root.CFrame = PortalVerde.CFrame + Vector3.new(0, 3, 0)
+                    TempoNoAzul = 0
+                    TempoNoVerde = 0
+                    task.wait(0.5)
+                end
+            else
+                TempoNoAzul = 0
             end
         end
     end
@@ -210,9 +197,7 @@ local ToggleESP = Tab:CreateToggle({
    Name = "Ativar ESP (Ver Jogadores)",
    CurrentValue = false,
    Flag = "ToggleESP", 
-   Callback = function(Value)
-        ESP_Ativado = Value
-   end,
+   Callback = function(Value) ESP_Ativado = Value end,
 })
 
 Tab:CreateSection("⚡ Speed (Velocidade)")
@@ -224,16 +209,15 @@ local DropdownVelocidade = Tab:CreateDropdown({
    MultipleOptions = false,
    Flag = "DropdownVel", 
    Callback = function(Option)
-        local selecionado = Option[1]
-        if selecionado == "Normal (16)" then VelocidadeDesejada = 16
-        elseif selecionado == "Rápido (35)" then VelocidadeDesejada = 35
-        elseif selecionado == "Super Rápido (70)" then VelocidadeDesejada = 70
-        elseif selecionado == "Flash (120)" then VelocidadeDesejada = 120
-        elseif selecionado == "Velo (200)" then VelocidadeDesejada = 200
-        elseif selecionado == "Velo (220)" then VelocidadeDesejada = 220
-        elseif selecionado == "Velo (240)" then VelocidadeDesejada = 240
-        elseif selecionado == "Insano (300)" then VelocidadeDesejada = 300
-        end
+        local s = Option[1]
+        if s == "Normal (16)" then VelocidadeDesejada = 16
+        elseif s == "Rápido (35)" then VelocidadeDesejada = 35
+        elseif s == "Super Rápido (70)" then VelocidadeDesejada = 70
+        elseif s == "Flash (120)" then VelocidadeDesejada = 120
+        elseif s == "Velo (200)" then VelocidadeDesejada = 200
+        elseif s == "Velo (220)" then VelocidadeDesejada = 220
+        elseif s == "Velo (240)" then VelocidadeDesejada = 240
+        elseif s == "Insano (300)" then VelocidadeDesejada = 300 end
 
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.WalkSpeed = VelocidadeDesejada
@@ -250,13 +234,12 @@ local DropdownPulo = Tab:CreateDropdown({
    MultipleOptions = false,
    Flag = "DropdownPulo", 
    Callback = function(Option)
-        local selecionado = Option[1]
-        if selecionado == "Normal (50)" then PuloDesejado = 50
-        elseif selecionado == "Alto (100)" then PuloDesejado = 100
-        elseif selecionado == "Super Alto (150)" then PuloDesejado = 150
-        elseif selecionado == "Gravidade Lunar (250)" then PuloDesejado = 250
-        elseif selecionado == "Foguete (400)" then PuloDesejado = 400
-        end
+        local s = Option[1]
+        if s == "Normal (50)" then PuloDesejado = 50
+        elseif s == "Alto (100)" then PuloDesejado = 100
+        elseif s == "Super Alto (150)" then PuloDesejado = 150
+        elseif s == "Gravidade Lunar (250)" then PuloDesejado = 250
+        elseif s == "Foguete (400)" then PuloDesejado = 400 end
 
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.UseJumpPower = true
@@ -271,9 +254,7 @@ local ToggleNoclip = Tab:CreateToggle({
    Name = "Ativar Noclip",
    CurrentValue = false,
    Flag = "ToggleNoclip", 
-   Callback = function(Value)
-        NoclipAtivado = Value
-   end,
+   Callback = function(Value) NoclipAtivado = Value end,
 })
 
 Tab:CreateSection("📍 Telp (Teleporte)")
@@ -288,9 +269,11 @@ local DropdownTeleporte = Tab:CreateDropdown({
         local nomeAlvo = Option[1]
         if nomeAlvo and nomeAlvo ~= "Nenhum outro jogador" and nomeAlvo ~= "" then
             local JogadorAlvo = Players:FindFirstChild(nomeAlvo)
-            if JogadorAlvo and JogadorAlvo.Character and JogadorAlvo.Character:FindFirstChild("HumanoidRootPart") then
-                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    LocalPlayer.Character.HumanoidRootPart.CFrame = JogadorAlvo.Character.HumanoidRootPart.CFrame
+            if JogadorAlvo and JogadorAlvo.Character then
+                local alvoRoot = ObterRaiz(JogadorAlvo.Character)
+                local meuRoot = ObterRaiz(LocalPlayer.Character)
+                if alvoRoot and meuRoot then
+                    meuRoot.CFrame = alvoRoot.CFrame
                 end
             end
         end
@@ -309,8 +292,11 @@ local DropdownVisual = Tab:CreateDropdown({
         local nomeAlvo = Option[1]
         if nomeAlvo and nomeAlvo ~= "Nenhum outro jogador" and nomeAlvo ~= "" then
             local JogadorAlvo = Players:FindFirstChild(nomeAlvo)
-            if JogadorAlvo and JogadorAlvo.Character and JogadorAlvo.Character:FindFirstChild("Humanoid") then
-                Camera.CameraSubject = JogadorAlvo.Character.Humanoid
+            if JogadorAlvo and JogadorAlvo.Character then
+                local hum = JogadorAlvo.Character:FindFirstChild("Humanoid")
+                local root = ObterRaiz(JogadorAlvo.Character)
+                if hum then Camera.CameraSubject = hum
+                elseif root then Camera.CameraSubject = root end
             end
         end
    end,
@@ -319,8 +305,11 @@ local DropdownVisual = Tab:CreateDropdown({
 local BotaoSairVisual = Tab:CreateButton({
    Name = "Desativar Visual (Voltar para mim)",
    Callback = function()
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            Camera.CameraSubject = LocalPlayer.Character.Humanoid
+        if LocalPlayer.Character then
+            local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
+            local root = ObterRaiz(LocalPlayer.Character)
+            if hum then Camera.CameraSubject = hum
+            elseif root then Camera.CameraSubject = root end
         end
    end,
 })
@@ -344,16 +333,13 @@ Tab2:CreateSection("🌌 Sistema de Portais (Apenas Você Vê)")
 
 local BotaoRelease = Tab2:CreateButton({
    Name = "(Release) - Soltar Portal",
-   Callback = function()
-        SoltarPortal()
-   end,
+   Callback = function() SoltarPortal() end,
 })
 
 -- Mensagem ao carregar
 Rayfield:Notify({
-    Title = "Portais Corrigidos!",
-    Content = "Fique 2 segundos no portal para teleportar.",
+    Title = "Super Atualização!",
+    Content = "Portais agora funcionam em animais!",
     Duration = 5,
     Image = 4483362458,
 })
-
