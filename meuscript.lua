@@ -111,7 +111,7 @@ end
 -------------------------------------------------------------------------
 -- MENU DA INTERFACE (ABA-1)
 -------------------------------------------------------------------------
-Tab:CreateSection("Funções de ESP")
+Tab:CreateSection("👁️ Funções de ESP")
 
 -- 1. Botão de Ligar/Desligar ESP
 local ToggleESP = Tab:CreateToggle({
@@ -128,7 +128,7 @@ local ToggleESP = Tab:CreateToggle({
    end,
 })
 
-Tab:CreateSection("Movimentação")
+Tab:CreateSection("⚡ Speed (Velocidade)")
 
 -- 2. Escolher Velocidade
 local DropdownVelocidade = Tab:CreateDropdown({
@@ -156,6 +156,8 @@ local DropdownVelocidade = Tab:CreateDropdown({
    end,
 })
 
+Tab:CreateSection("⬆️ Jump (Pulo)")
+
 -- 3. Escolher Pulo
 local DropdownPulo = Tab:CreateDropdown({
    Name = "Escolher Pulo",
@@ -180,9 +182,11 @@ local DropdownPulo = Tab:CreateDropdown({
    end,
 })
 
+Tab:CreateSection("👻 Atravessar Parede (Noclip)")
+
 -- 4. Botão de Atravessar Parede (Noclip)
 local ToggleNoclip = Tab:CreateToggle({
-   Name = "Atravessar Parede (Noclip)",
+   Name = "Ativar Noclip",
    CurrentValue = false,
    Flag = "ToggleNoclip", 
    Callback = function(Value)
@@ -195,7 +199,7 @@ local ToggleNoclip = Tab:CreateToggle({
    end,
 })
 
-Tab:CreateSection("Telp (Teleporte)")
+Tab:CreateSection("📍 Telp (Teleporte)")
 
 -- 5. Menu de Teleporte
 local DropdownTeleporte = Tab:CreateDropdown({
@@ -218,7 +222,7 @@ local DropdownTeleporte = Tab:CreateDropdown({
    end,
 })
 
-Tab:CreateSection("Visual (Assistir Tela)")
+Tab:CreateSection("🎥 Visual (Assistir Tela)")
 
 -- 6. Menu de Visual / Spectate
 local DropdownVisual = Tab:CreateDropdown({
@@ -252,7 +256,7 @@ local BotaoSairVisual = Tab:CreateButton({
    end,
 })
 
-Tab:CreateSection("Utilitários")
+Tab:CreateSection("⚙️ Utilitários")
 
 -- 8. Botão para atualizar TODAS as listas
 local BotaoAtualizarLista = Tab:CreateButton({
@@ -267,8 +271,8 @@ local BotaoAtualizarLista = Tab:CreateButton({
 
 -- Mensagem ao carregar
 Rayfield:Notify({
-    Title = "Painel Atualizado!",
-    Content = "Pulo e Noclip carregados com sucesso.",
+    Title = "Painel Organizado!",
+    Content = "Tudo separado em categorias.",
     Duration = 5,
     Image = 4483362458,
 })
