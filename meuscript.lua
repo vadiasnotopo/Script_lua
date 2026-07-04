@@ -68,12 +68,16 @@ local Tab3 = Window:CreateTab("Aba-3 (Gráficos)", 4483362458)
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
 local ESP_Ativado = false
 local NoclipAtivado = false
 local WallAtivado = false
+local ImmortalAtivado = false
+local FlyAtivado = false
+local FlySpeed = 50
 local WallPart = nil
 local VelocidadeDesejada = 16
 local PuloDesejado = 50 
@@ -97,8 +101,9 @@ local function PegarNomesJogadores()
 end
 
 -------------------------------------------------------------------------
--- SISTEMAS INTERNOS (ESP, MOVI, NOCLIP, WALL)
+-- SISTEMAS INTERNOS (ESP, MOVI, NOCLIP, WALL, IMORTAL, FLY)
 -------------------------------------------------------------------------
+-- ESP
 task.spawn(function()
     while task.wait(1) do
         if ESP_Ativado then
@@ -124,8 +129,9 @@ task.spawn(function()
     end
 end)
 
+-- Velocidade e Pulo
 task.spawn(function()
-    game:GetService("RunService").RenderStepped:Connect(function()
+    RunService.RenderStepped:Connect(function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             local humanoid = LocalPlayer.Character.Humanoid
             if VelocidadeDesejada ~= 16 then humanoid.WalkSpeed = VelocidadeDesejada end
@@ -134,8 +140,9 @@ task.spawn(function()
     end)
 end)
 
+-- Noclip
 task.spawn(function()
-    game:GetService("RunService").Stepped:Connect(function()
+    RunService.Stepped:Connect(function()
         if NoclipAtivado and LocalPlayer.Character then
             for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
                 if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end
@@ -144,7 +151,8 @@ task.spawn(function()
     end)
 end)
 
-game:GetService("RunService").RenderStepped:Connect(function()
+-- Wall (Segurança de Queda)
+RunService.RenderStepped:Connect(function()
     if WallAtivado and LocalPlayer.Character then
         local root = ObterRaiz(LocalPlayer.Character)
         local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -167,8 +175,54 @@ game:GetService("RunService").RenderStepped:Connect(function()
     end
 end)
 
+-- Sistema Imortal
+RunService.Heartbeat:Connect(function()
+    if ImmortalAtivado and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.Health = LocalPlayer.Character.Humanoid.MaxHealth
+    end
+end)
+
+-- Sistema de Fly
+local BV, BG
+RunService.RenderStepped:Connect(function()
+    if FlyAtivado and LocalPlayer.Character and ObterRaiz(LocalPlayer.Character) then
+        local root = ObterRaiz(LocalPlayer.Character)
+        local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
+        
+        if not BV then
+            BV = Instance.new("BodyVelocity")
+            BV.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            BV.Velocity = Vector3.new(0, 0, 0)
+            BV.Parent = root
+        end
+        if not BG then
+            BG = Instance.new("BodyGyro")
+            BG.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+            BG.CFrame = Camera.CFrame
+            BG.Parent = root
+        end
+        
+        if hum then
+            hum.PlatformStand = true
+            local moveDir = hum.MoveDirection
+            if moveDir.Magnitude > 0 then
+                BV.Velocity = Camera.CFrame.LookVector * FlySpeed
+            else
+                BV.Velocity = Vector3.new(0, 0, 0)
+            end
+        end
+        BG.CFrame = Camera.CFrame
+    else
+        if BV then BV:Destroy() BV = nil end
+        if BG then BG:Destroy() BG = nil end
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.PlatformStand = false
+        end
+    end
+end)
+
 -------------------------------------------------------------------------
--- SISTEMA DE PORTAIS (ABA-2)
+-- SISTEMA DE PORTAIS
 -------------------------------------------------------------------------
 local PortalVerde = nil
 local PortalAzul = nil
@@ -398,6 +452,24 @@ local BotaoAtualizarLista = Tab:CreateButton({
    end,
 })
 
+Tab:CreateSection("✈️ Sistema de Voo (Fly)")
+local ToggleFly = Tab:CreateToggle({
+   Name = "Ativar Fly (Voo)",
+   CurrentValue = false,
+   Flag = "ToggleFly", 
+   Callback = function(Value) FlyAtivado = Value end,
+})
+
+local SliderFly = Tab:CreateSlider({
+   Name = "Velocidade do Fly",
+   Range = {10, 300},
+   Increment = 10,
+   Suffix = "Velo",
+   CurrentValue = 50,
+   Flag = "SliderFly", 
+   Callback = function(Value) FlySpeed = Value end,
+})
+
 -------------------------------------------------------------------------
 -- MENU DA INTERFACE (ABA-2)
 -------------------------------------------------------------------------
@@ -416,6 +488,21 @@ local ToggleWall = Tab2:CreateToggle({
         WallAtivado = Value
         if Value then Rayfield:Notify({Title = "Wall Ativado", Content = "Plataforma criada!", Duration = 2})
         else Rayfield:Notify({Title = "Wall Desativado", Content = "Plataforma removida.", Duration = 2}) end
+   end,
+})
+
+Tab2:CreateSection("💀 Proteção Divina")
+local ToggleImmortal = Tab2:CreateToggle({
+   Name = "Ativar Imortal",
+   CurrentValue = false,
+   Flag = "ToggleImmortal",
+   Callback = function(Value)
+        ImmortalAtivado = Value
+        if Value then
+            Rayfield:Notify({Title = "Proteção", Content = "Ativou imortal!", Duration = 3})
+        else
+            Rayfield:Notify({Title = "Proteção", Content = "Imortalidade desativada.", Duration = 3})
+        end
    end,
 })
 
