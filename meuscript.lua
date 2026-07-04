@@ -82,6 +82,9 @@ local WallPart = nil
 local VelocidadeDesejada = 16
 local PuloDesejado = 50 
 
+local AutoSightTarget = nil -- Variável do Auto Sight
+local DropdownSight -- Pré-declarado para poder atualizar na Aba-1
+
 local function ObterRaiz(char)
     if not char then return nil end
     if char.PrimaryPart then return char.PrimaryPart end
@@ -101,7 +104,7 @@ local function PegarNomesJogadores()
 end
 
 -------------------------------------------------------------------------
--- SISTEMAS INTERNOS (ESP, MOVI, NOCLIP, WALL, IMORTAL, FLY)
+-- SISTEMAS INTERNOS (ESP, MOVI, NOCLIP, WALL, IMORTAL, FLY, SIGHT)
 -------------------------------------------------------------------------
 -- ESP
 task.spawn(function()
@@ -218,6 +221,15 @@ RunService.RenderStepped:Connect(function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.PlatformStand = false
         end
+    end
+end)
+
+-- Sistema de Auto Sight (Mira Automática)
+RunService.RenderStepped:Connect(function()
+    if AutoSightTarget and AutoSightTarget.Character and AutoSightTarget.Character:FindFirstChild("HumanoidRootPart") then
+        local targetPart = AutoSightTarget.Character.HumanoidRootPart
+        -- Força a câmera do jogador local a olhar diretamente para o alvo
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPart.Position)
     end
 end)
 
@@ -448,6 +460,7 @@ local BotaoAtualizarLista = Tab:CreateButton({
         local novaLista = PegarNomesJogadores()
         DropdownTeleporte:Refresh(novaLista)
         DropdownVisual:Refresh(novaLista)
+        if DropdownSight then DropdownSight:Refresh(novaLista) end
         Rayfield:Notify({Title = "Listas Atualizadas", Content = "Atualizado com sucesso!", Duration = 2})
    end,
 })
@@ -473,6 +486,90 @@ local SliderFly = Tab:CreateSlider({
 -------------------------------------------------------------------------
 -- MENU DA INTERFACE (ABA-2)
 -------------------------------------------------------------------------
+
+Tab2:CreateSection("🎯 Auto Sight (Mira Automática)")
+DropdownSight = Tab2:CreateDropdown({
+   Name = "Escolher Alvo",
+   Options = PegarNomesJogadores(),
+   CurrentOption = {""},
+   MultipleOptions = false,
+   Flag = "DropdownSight",
+   Callback = function(Option)
+        local nomeAlvo = Option[1]
+        
+        -- Limpa se selecionar nada ou opção inválida
+        if not nomeAlvo or nomeAlvo == "" or nomeAlvo == "Nenhum outro jogador" then 
+            AutoSightTarget = nil 
+            return 
+        end
+
+        -- Se já tiver um alvo e clicar nele novamente, desativa
+        if AutoSightTarget and AutoSightTarget.Name == nomeAlvo then
+            if AutoSightTarget.Character and AutoSightTarget.Character:FindFirstChild("NomeAlvoTag") then
+                AutoSightTarget.Character.NomeAlvoTag:Destroy()
+            end
+            AutoSightTarget = nil
+            Rayfield:Notify({Title = "Auto Sight", Content = "Mira desativada.", Duration = 2})
+        else
+            -- Remove a tag antiga de qualquer um que estivesse antes
+            for _, player in pairs(Players:GetPlayers()) do
+                if player.Character and player.Character:FindFirstChild("NomeAlvoTag") then
+                    player.Character.NomeAlvoTag:Destroy()
+                end
+            end
+
+            -- Ativa a mira no novo alvo
+            AutoSightTarget = Players:FindFirstChild(nomeAlvo)
+            
+            -- Adiciona o nome em cima da cabeça
+            if AutoSightTarget and AutoSightTarget.Character then
+                local bb = Instance.new("BillboardGui")
+                bb.Name = "NomeAlvoTag"
+                bb.Adornee = AutoSightTarget.Character:FindFirstChild("Head") or AutoSightTarget.Character:FindFirstChild("HumanoidRootPart")
+                -- Tamanho reduzido e altura rebaixada para ficar mais discreto e próximo
+                bb.Size = UDim2.new(0, 150, 0, 30) 
+                bb.StudsOffset = Vector3.new(0, 1.5, 0) 
+                bb.AlwaysOnTop = true
+                
+                local label = Instance.new("TextLabel", bb)
+                label.Size = UDim2.new(1,0,1,0)
+                label.Text = "🎯 " .. AutoSightTarget.Name
+                label.TextColor3 = Color3.fromRGB(255, 0, 0) -- Vermelho
+                label.TextStrokeTransparency = 0
+                label.BackgroundTransparency = 1
+                -- Fonte menor e tamanho fixo
+                label.TextScaled = false
+                label.TextSize = 16 
+                label.Font = Enum.Font.SourceSansBold
+                
+                bb.Parent = AutoSightTarget.Character
+                Rayfield:Notify({Title = "Auto Sight", Content = "Travado em: " .. nomeAlvo, Duration = 2})
+            end
+        end
+   end,
+})
+
+local BotaoDesativarMira = Tab2:CreateButton({
+   Name = "❌ Desativar Mira Automática",
+   Callback = function()
+        if AutoSightTarget and AutoSightTarget.Character and AutoSightTarget.Character:FindFirstChild("NomeAlvoTag") then
+            AutoSightTarget.Character.NomeAlvoTag:Destroy()
+        end
+        AutoSightTarget = nil
+        Rayfield:Notify({Title = "Auto Sight", Content = "Mira desativada com sucesso.", Duration = 2})
+   end,
+})
+
+local BotaoAtualizarSight = Tab2:CreateButton({
+   Name = "🔄 Atualizar Lista de Jogadores",
+   Callback = function()
+        if DropdownSight then 
+            DropdownSight:Refresh(PegarNomesJogadores()) 
+            Rayfield:Notify({Title = "Lista Atualizada", Content = "Novos jogadores carregados!", Duration = 2})
+        end
+   end,
+})
+
 Tab2:CreateSection("🌌 Sistema de Portais (Apenas Você Vê)")
 local BotaoRelease = Tab2:CreateButton({
    Name = "(Release) - Soltar Portal",
