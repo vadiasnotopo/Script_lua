@@ -2,40 +2,35 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -------------------------------------------------------------------------
--- SISTEMA DE TEMPO (40 MINUTOS) E AUTO-COPY LINK
+-- SISTEMA DE TEMPO (24 HORAS) E AUTO-COPY LINK
 -------------------------------------------------------------------------
 local LinkDoSite = "https://vadiasnotopo.github.io/Chanel_1anonimo/"
 local ArquivoTempo = "Tempo_Painel_Chanel.txt"
-local NomeDoSaveRayfield = "MinhaChaveDiaria" -- Nome do arquivo da Key
-local TempoMaximo = 40 * 60 -- 40 minutos em segundos
+local NomeDoSaveRayfield = "MinhaChaveDiaria"
+local TempoMaximo = 24 * 60 * 60 -- 24 horas em segundos (Sincronizado com o site)
 
 -- Copia o link para o clipboard automaticamente
 pcall(function() setclipboard(LinkDoSite) end)
 
--- Lógica de expiração: Se passou de 40 minutos, deleta o arquivo da Key
 if isfile and isfile(ArquivoTempo) then
     local TempoSalvo = tonumber(readfile(ArquivoTempo))
     local TempoAtual = os.time()
     
     if TempoAtual - TempoSalvo >= TempoMaximo then
-        -- Passou de 40 minutos, reseta a Key para forçar nova verificação
         pcall(function()
             if isfile(NomeDoSaveRayfield..".txt") then delfile(NomeDoSaveRayfield..".txt") end
-            writefile(ArquivoTempo, tostring(os.time())) -- Atualiza o tempo para um novo ciclo
+            writefile(ArquivoTempo, tostring(os.time()))
         end)
     end
 else
-    -- Primeira vez ou arquivo não existe, cria o arquivo de contagem
-    if writefile then
-        writefile(ArquivoTempo, tostring(os.time()))
-    end
+    if writefile then writefile(ArquivoTempo, tostring(os.time())) end
 end
 
 -------------------------------------------------------------------------
--- SISTEMA DE CHAVE DIÁRIA (Matemática Secreta)
+-- SISTEMA DE CHAVE DIÁRIA (Sincronizado com a Web)
 -------------------------------------------------------------------------
 local function PegarChaveDoDia()
-    local data = os.date("!*t") 
+    local data = os.date("!*t") -- Usa o horário UTC (Universal) para bater certinho com o JS
     return tostring("KEY-" .. (data.day * 7) .. "X" .. (data.month * 3) .. data.year)
 end
 
@@ -45,16 +40,16 @@ end
 local Window = Rayfield:CreateWindow({
    Name = "Painel Profissional Unificado",
    LoadingTitle = "Carregando Scripts...",
-   LoadingSubtitle = "por Você",
+   LoadingSubtitle = "Aguarde...",
    ConfigurationSaving = { Enabled = false, FolderName = nil, FileName = "PainelConfig" },
    Discord = { Enabled = false, Invite = "noinvitelink", RememberJoins = true },
    
-   -- CONFIGURAÇÕES DA KEY
+   -- CONFIGURAÇÕES DA KEY ATIVADAS
    KeySystem = true, 
    KeySettings = {
-      Title = "Acesso Limitado (40 Minutos)",
-      Subtitle = "Link do site copiado para você!",
-      Note = "Sua chave salva automaticamente por 40 min.",
+      Title = "Acesso Premium (Passe de 24h)",
+      Subtitle = "Link do gerador copiado para a área de transferência!",
+      Note = "Cole o link no navegador e pegue sua Key.",
       FileName = NomeDoSaveRayfield, 
       SaveKey = true, 
       GrabKeyFromSite = false, 
@@ -83,17 +78,15 @@ local WallPart = nil
 local VelocidadeDesejada = 16
 local PuloDesejado = 50 
 
--- Acha a peça principal do corpo, não importa se é humano ou animal
 local function ObterRaiz(char)
     if not char then return nil end
     if char.PrimaryPart then return char.PrimaryPart end
     if char:FindFirstChild("HumanoidRootPart") then return char.HumanoidRootPart end
     if char:FindFirstChild("Torso") then return char.Torso end
     if char:FindFirstChild("UpperTorso") then return char.UpperTorso end
-    return char:FindFirstChildWhichIsA("BasePart") -- Pega qualquer parte do corpo como último recurso
+    return char:FindFirstChildWhichIsA("BasePart")
 end
 
--- Pegar nomes dos jogadores
 local function PegarNomesJogadores()
     local nomes = {}
     for _, player in pairs(Players:GetPlayers()) do
@@ -106,7 +99,6 @@ end
 -------------------------------------------------------------------------
 -- SISTEMAS INTERNOS (ESP, MOVI, NOCLIP, WALL)
 -------------------------------------------------------------------------
--- ESP
 task.spawn(function()
     while task.wait(1) do
         if ESP_Ativado then
@@ -132,7 +124,6 @@ task.spawn(function()
     end
 end)
 
--- Movimentação (Velocidade e Pulo)
 task.spawn(function()
     game:GetService("RunService").RenderStepped:Connect(function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
@@ -143,20 +134,16 @@ task.spawn(function()
     end)
 end)
 
--- Noclip
 task.spawn(function()
     game:GetService("RunService").Stepped:Connect(function()
         if NoclipAtivado and LocalPlayer.Character then
             for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") and part.CanCollide then
-                    part.CanCollide = false
-                end
+                if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end
             end
         end
     end)
 end)
 
--- Wall (Plataforma Invisível)
 game:GetService("RunService").RenderStepped:Connect(function()
     if WallAtivado and LocalPlayer.Character then
         local root = ObterRaiz(LocalPlayer.Character)
@@ -176,10 +163,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
             WallPart.CFrame = CFrame.new(root.Position.X, root.Position.Y - offset, root.Position.Z)
         end
     else
-        if WallPart then
-            WallPart:Destroy()
-            WallPart = nil
-        end
+        if WallPart then WallPart:Destroy() WallPart = nil end
     end
 end)
 
@@ -189,7 +173,6 @@ end)
 local PortalVerde = nil
 local PortalAzul = nil
 local ProximoPortal = "Verde"
-
 local TempoNoVerde = 0
 local TempoNoAzul = 0
 local TempoParaTeleporte = 3.5 
@@ -198,7 +181,6 @@ local function SoltarPortal()
     local char = LocalPlayer.Character
     local root = ObterRaiz(char)
     if not root then return end
-    
     local posicaoChao = root.Position - Vector3.new(0, 3, 0)
 
     if ProximoPortal == "Verde" then
@@ -215,7 +197,6 @@ local function SoltarPortal()
         PortalVerde.CFrame = CFrame.new(posicaoChao)
         ProximoPortal = "Azul"
         Rayfield:Notify({Title = "Release", Content = "Portal Verde posicionado!", Duration = 2})
-
     else
         if not PortalAzul then
             PortalAzul = Instance.new("Part")
@@ -233,15 +214,12 @@ local function SoltarPortal()
     end
 end
 
--- Scanner de distância para Portais
 task.spawn(function()
     while task.wait(0.1) do 
         local char = LocalPlayer.Character
         local root = ObterRaiz(char) 
-        
         if root and PortalVerde and PortalAzul then
             local hrpPos = root.Position
-            
             local distVerde = (hrpPos - PortalVerde.Position).Magnitude
             if distVerde <= 6 then 
                 TempoNoVerde = TempoNoVerde + 0.1
@@ -251,9 +229,7 @@ task.spawn(function()
                     TempoNoAzul = 0
                     task.wait(0.5) 
                 end
-            else
-                TempoNoVerde = 0 
-            end
+            else TempoNoVerde = 0 end
             
             local distAzul = (hrpPos - PortalAzul.Position).Magnitude
             if distAzul <= 6 then
@@ -264,9 +240,7 @@ task.spawn(function()
                     TempoNoVerde = 0
                     task.wait(0.5)
                 end
-            else
-                TempoNoAzul = 0
-            end
+            else TempoNoAzul = 0 end
         end
     end
 end)
@@ -280,13 +254,8 @@ local ToggleClima = Tab:CreateToggle({
    CurrentValue = false,
    Flag = "ToggleClima", 
    Callback = function(Value)
-        if Value then
-            Lighting.ClockTime = 0 
-            Rayfield:Notify({Title = "Clima", Content = "🌙 Modo Escuro ativado!", Duration = 2})
-        else
-            Lighting.ClockTime = 14 
-            Rayfield:Notify({Title = "Clima", Content = "☀️ Modo Claro ativado!", Duration = 2})
-        end
+        if Value then Lighting.ClockTime = 0 
+        else Lighting.ClockTime = 14 end
    end,
 })
 
@@ -317,7 +286,6 @@ local DropdownVelocidade = Tab:CreateDropdown({
         elseif s == "Insano (300)" then VelocidadeDesejada = 300
         elseif s == "Extremo (500)" then VelocidadeDesejada = 500
         elseif s == "Deus (800)" then VelocidadeDesejada = 800 end
-
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.WalkSpeed = VelocidadeDesejada
         end
@@ -340,7 +308,6 @@ local DropdownPulo = Tab:CreateDropdown({
         elseif s == "Gravidade Lunar (250)" then PuloDesejado = 250
         elseif s == "Foguete (400)" then PuloDesejado = 400
         elseif s == "Espacial (700)" then PuloDesejado = 700 end
-
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.UseJumpPower = true
             LocalPlayer.Character.Humanoid.JumpPower = PuloDesejado
@@ -381,9 +348,7 @@ local DropdownTeleporte = Tab:CreateDropdown({
             if JogadorAlvo and JogadorAlvo.Character then
                 local alvoRoot = ObterRaiz(JogadorAlvo.Character)
                 local meuRoot = ObterRaiz(LocalPlayer.Character)
-                if alvoRoot and meuRoot then
-                    meuRoot.CFrame = alvoRoot.CFrame
-                end
+                if alvoRoot and meuRoot then meuRoot.CFrame = alvoRoot.CFrame end
             end
         end
    end,
@@ -449,11 +414,8 @@ local ToggleWall = Tab2:CreateToggle({
    Flag = "ToggleWall",
    Callback = function(Value)
         WallAtivado = Value
-        if Value then
-            Rayfield:Notify({Title = "Wall Ativado", Content = "Plataforma invisível criada sob você!", Duration = 2})
-        else
-            Rayfield:Notify({Title = "Wall Desativado", Content = "Plataforma invisível removida.", Duration = 2})
-        end
+        if Value then Rayfield:Notify({Title = "Wall Ativado", Content = "Plataforma criada!", Duration = 2})
+        else Rayfield:Notify({Title = "Wall Desativado", Content = "Plataforma removida.", Duration = 2}) end
    end,
 })
 
@@ -469,39 +431,29 @@ local DropdownGraficos = Tab3:CreateDropdown({
    Flag = "DropdownGraficos",
    Callback = function(Option)
         local nivel = Option[1]
-        
         if nivel == "Baixo" then
             Lighting.GlobalShadows = false
             pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level01 end)
             if Workspace:FindFirstChildOfClass("Terrain") then Workspace.Terrain.Decoration = false end
-            Rayfield:Notify({Title = "Gráficos: Baixo", Content = "Otimizado ao máximo! Jogo sem travamentos.", Duration = 3})
-            
+            Rayfield:Notify({Title = "Gráficos: Baixo", Content = "Otimizado ao máximo!", Duration = 3})
         elseif nivel == "Médio" then
             Lighting.GlobalShadows = true
             pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level07 end)
             if Workspace:FindFirstChildOfClass("Terrain") then Workspace.Terrain.Decoration = true end
-            Rayfield:Notify({Title = "Gráficos: Médio", Content = "Modo Equilibrado ativado com ótima performance!", Duration = 3})
-            
+            Rayfield:Notify({Title = "Gráficos: Médio", Content = "Modo Equilibrado!", Duration = 3})
         elseif nivel == "Alto" then
             Lighting.GlobalShadows = true
             pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level13 end)
             if Workspace:FindFirstChildOfClass("Terrain") then Workspace.Terrain.Decoration = true end
-            Rayfield:Notify({Title = "Gráficos: Alto", Content = "Visual incrível habilitado com boa taxa de FPS!", Duration = 3})
-            
+            Rayfield:Notify({Title = "Gráficos: Alto", Content = "Visual incrível habilitado!", Duration = 3})
         elseif nivel == "Ultrapassado" then
             Lighting.GlobalShadows = true
             pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level21 end)
             if Workspace:FindFirstChildOfClass("Terrain") then Workspace.Terrain.Decoration = true end
-            Rayfield:Notify({Title = "Gráficos: Ultrapassado", Content = "Gráficos Ultra ativos com FPS totalmente estável!", Duration = 3})
+            Rayfield:Notify({Title = "Gráficos", Content = "Gráficos Ultra ativos!", Duration = 3})
         end
    end,
 })
 
--- Notificação final
-Rayfield:Notify({
-    Title = "Painel Atualizado!",
-    Content = "Sistema de Key, Portais, Teleportes e Gráficos carregados com sucesso!",
-    Duration = 5,
-    Image = 4483362458,
-})
+Rayfield:Notify({Title = "Autenticado!", Content = "Chave válida reconhecida.", Duration = 5})
 
